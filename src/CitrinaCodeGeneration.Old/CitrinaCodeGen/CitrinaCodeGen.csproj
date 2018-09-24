@@ -9,7 +9,7 @@
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <RootNamespace>CitrinaCodeGen</RootNamespace>
     <AssemblyName>CitrinaCodeGen</AssemblyName>
-    <TargetFrameworkVersion>v4.7</TargetFrameworkVersion>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
   </PropertyGroup>
@@ -45,8 +45,18 @@
     <Compile Include="CitrinaMethodParameter.cs" />
     <Compile Include="CitrinaObject.cs" />
     <Compile Include="CitrinaObjectProperty.cs" />
+    <Compile Include="InterfacesTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>InterfacesTemplate.tt</DependentUpon>
+    </Compile>
     <Compile Include="IProcessor.cs" />
     <Compile Include="MethodsProcessor.cs" />
+    <Compile Include="MethodsTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>MethodsTemplate.tt</DependentUpon>
+    </Compile>
     <Compile Include="ObjectPropertyEqualityComparer.cs" />
     <None Include="InterfacesTemplate.tt">
       <Generator>TextTemplatingFileGenerator</Generator>
@@ -61,6 +71,11 @@
       <AutoGen>True</AutoGen>
       <DesignTime>True</DesignTime>
     </Content>
+    <Compile Include="ObjectsTemplate.cs">
+      <AutoGen>True</AutoGen>
+      <DesignTime>True</DesignTime>
+      <DependentUpon>ObjectsTemplate.tt</DependentUpon>
+    </Compile>
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ObjectsProcessor.cs" />
     <Compile Include="ResponsesProcessor.cs" />
