@@ -1,6 +1,6 @@
-﻿using System.Collections.Generic;
-using System.Linq;
-using Microsoft.CodeAnalysis;
+﻿using System.Linq;
+using System.Threading.Tasks;
+using CitrinaCodeGeneration.CSharpCode;
 using VKApiSchemaParser;
 using VKApiSchemaParser.Models;
 
@@ -8,23 +8,32 @@ namespace CitrinaCodeGeneration
 {
     public class Program
     {
-        public static void Main(string[] args)
+        public static async Task Main(string[] args)
         {
-            var vkApiSchema = new VKApiSchema();
-            var classes = vkApiSchema.GetObjectsAsync().Result;
-            var sc = classes.Objects.Take(5);
+            var vkApiSchema = await VKApiSchema.ParseAsync();
 
-            var cg = new CodeGenerator();
-            var gc = new List<SyntaxNode>();
+            var codeGen = new SimpleCodeGenerator();
 
-            foreach (var c in sc)
+            var sourceFile = new CSharpSourceFile
             {
-                var properties = c.Value.Properties?.Select(p => cg.NewProperty(PrepareName(p.Name), PrepareType(p.Type)));
-                gc.Add(cg.NewClass(PrepareName(c.Value.Name), null, properties?.ToArray()));
-            }
+                Name = "test.cs",
+                Usings = new[] {"System", "System.Text"},
+                Namespace = new CSharpNamespace
+                {
+                    Name = "TestNameSpace",
+                    Classes = vkApiSchema.Objects.Take(10).Select(o => o.Value).Select(o => new CSharpClass
+                    {
+                        Name = o.Name,
+                        Properties = o.Properties?.Select(p => new CSharpProperty
+                        {
+                            Name = p.Name,
+                            Type = PrepareType(p.Type)
+                        })
+                    })
+                }
+            };
 
-            var newNamespace = cg.NewNamespace("TestNamespace", gc.ToArray());
-            cg.NewSourceFile("test.cs", newNamespace, new[] { "System", "System.Text" });
+            await codeGen.CreateSourceFileAsync(sourceFile);
         }
 
         private static string PrepareName(string name)
