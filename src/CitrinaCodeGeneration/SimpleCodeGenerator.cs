@@ -7,11 +7,11 @@ namespace CitrinaCodeGeneration
 {
     public class SimpleCodeGenerator
     {
-        private readonly StringBuilder _codeBuilder;
+        private readonly CodeBuilder _codeBuilder;
 
         public SimpleCodeGenerator()
         {
-            _codeBuilder = new StringBuilder();
+            _codeBuilder = new CodeBuilder();
         }
 
         public async Task CreateSourceFileAsync(CSharpSourceFile sourceFile)
@@ -24,7 +24,7 @@ namespace CitrinaCodeGeneration
             AddEmptyLine();
             AddNamespace(sourceFile.Namespace);
 
-            await File.WriteAllTextAsync(sourceFile.Name, Code);
+            await File.WriteAllTextAsync(sourceFile.Name, _co);
         }
 
         private void AddEmptyLine()
@@ -88,9 +88,5 @@ namespace CitrinaCodeGeneration
 
             _codeBuilder.AppendLine($"{Tabs(2)}public {property.Type} {property.Name} {{ get; set; }} ");
         }
-
-        private string Code => _codeBuilder.ToString();
-
-        private static string Tabs(int count) => new string(' ', 4 * count);
     }
 }
