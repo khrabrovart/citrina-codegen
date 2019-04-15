@@ -1,68 +1,38 @@
-﻿using System.Linq;
+﻿using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
-using CitrinaCodeGeneration.CSharpCode;
 using VKApiSchemaParser;
-using VKApiSchemaParser.Models;
 
 namespace CitrinaCodeGeneration
 {
     public class Program
     {
+
+
         public static async Task Main(string[] args)
         {
             var vkApiSchema = await VKApiSchema.ParseAsync();
-
             var codeGen = new SimpleCodeGenerator();
+            var sourceFilesProcessor = new SourceFilesProcessor();
 
-            var sourceFile = new CSharpSourceFile
+            if (Directory.Exists("gen"))
             {
-                Name = "test.cs",
-                Usings = new[] {"System", "System.Text"},
-                Namespace = new CSharpNamespace
-                {
-                    Name = "TestNameSpace",
-                    Classes = vkApiSchema.Objects.Take(10).Select(o => o.Value).Select(o => new CSharpClass
-                    {
-                        Name = o.Name,
-                        Properties = o.Properties?.Select(p => new CSharpProperty
-                        {
-                            Name = p.Name,
-                            Type = PrepareType(p.Type)
-                        })
-                    })
-                }
-            };
-
-            await codeGen.CreateSourceFileAsync(sourceFile);
-        }
-
-        private static string PrepareName(string name)
-        {
-            if (string.IsNullOrWhiteSpace(name))
-            {
-                return null;
+                Directory.Delete("gen");
             }
 
-            if (char.IsNumber(name.First()))
+            Directory.CreateDirectory("gen");
+            
+
+            var objects = vkApiSchema.Objects.Select(o => o.Value).OrderBy(o => o.Name);
+
+            foreach (var obj in objects)
             {
-                return '_' + name;
+                sourceFilesProcessor.AddToSourceFile(obj);
             }
 
-            return name;
-        }
-
-        private static string PrepareType(ApiObjectType type)
-        {
-            switch (type)
+            foreach (var sourceFile in sourceFilesProcessor.SourceFiles)
             {
-                case ApiObjectType.Integer:
-                    return "int";
-                case ApiObjectType.String:
-                    return "string";
-                case ApiObjectType.Array:
-                    return "IEnumerable<object>";
-                default:
-                    return "object";
+                await codeGen.CreateSourceFileAsync(sourceFile);
             }
         }
     }

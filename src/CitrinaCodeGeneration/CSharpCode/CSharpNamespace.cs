@@ -6,6 +6,6 @@ namespace CitrinaCodeGeneration.CSharpCode
     {
         public string Name { get; set; }
 
-        public IEnumerable<CSharpClass> Classes { get; set; }
+        public IList<CSharpClass> Classes { get; set; }
     }
 }

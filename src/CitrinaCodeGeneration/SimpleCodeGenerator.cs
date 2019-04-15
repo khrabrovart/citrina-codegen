@@ -1,5 +1,6 @@
-﻿using System.IO;
-using System.Text;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 using CitrinaCodeGeneration.CSharpCode;
 
@@ -16,77 +17,72 @@ namespace CitrinaCodeGeneration
 
         public async Task CreateSourceFileAsync(CSharpSourceFile sourceFile)
         {
-            foreach (var usingName in sourceFile.Usings)
+            if (string.IsNullOrWhiteSpace(sourceFile.Name))
             {
-                AddUsing(usingName);
+                throw new ArgumentNullException(nameof(sourceFile.Name));
             }
 
-            AddEmptyLine();
-            AddNamespace(sourceFile.Namespace);
+            if (!sourceFile.Name.EndsWith(".cs"))
+            {
+                sourceFile.Name += ".cs";
+            }
 
-            await File.WriteAllTextAsync(sourceFile.Name, _co);
-        }
+            foreach (var usingName in sourceFile.Usings)
+            {
+                _codeBuilder.Line($"using {usingName};");
+            }
 
-        private void AddEmptyLine()
-        {
-            _codeBuilder.AppendLine();
-        }
+            _codeBuilder.Line();
 
-        private void AddUsing(string usingName)
-        {
-            _codeBuilder.AppendLine($"using {usingName};");
+            if (sourceFile.Namespace != null)
+            {
+                AddNamespace(sourceFile.Namespace);
+            }
+
+            await File.WriteAllTextAsync(sourceFile.Name, _codeBuilder.Code);
         }
 
         private void AddNamespace(CSharpNamespace ns)
         {
-            if (ns == null)
-            {
-                return;
-            }
-
-            _codeBuilder.AppendLine($"namespace {ns.Name}");
-            _codeBuilder.AppendLine("{");
-
-            if (ns.Classes != null)
-            {
-                foreach (var cl in ns.Classes)
-                {
-                    AddClass(cl);
-                }
-            }
-
-            _codeBuilder.AppendLine("}");
+            _codeBuilder.Line($"namespace {ns.Name}");
+            _codeBuilder.IterableBlock(ns.Classes?.ToArray(), AddClass, true);
         }
 
         private void AddClass(CSharpClass cl)
         {
-            if (cl == null)
-            {
-                return;
-            }
+            _codeBuilder.Line($"public class {cl.Name}");
+            _codeBuilder.IterableBlock(cl.Properties?.ToArray(), AddProperty, true);
+        }
 
-            _codeBuilder.AppendLine($"{Tabs(1)}public class {cl.Name}");
-            _codeBuilder.AppendLine($"{Tabs(1)}{{");
+        private void AddProperty(CSharpProperty property)
+        {
+            // Temporarily disable descriptions
+            //if (!string.IsNullOrWhiteSpace(property.Summary))
+            //{
+            //    AddSummary(property.Summary);
+            //}
 
-            if (cl.Properties != null)
+            if (property.Attributes != null)
             {
-                foreach (var property in cl.Properties)
+                foreach (var attr in property.Attributes)
                 {
-                    AppProperty(property);
+                    AddAttribute(attr);
                 }
             }
 
-            _codeBuilder.AppendLine($"{Tabs(1)}}}");
+            _codeBuilder.Line($"public {property.Type} {property.Name} {{ get; set; }} ");
         }
 
-        private void AppProperty(CSharpProperty property)
+        private void AddAttribute(string attribute)
         {
-            if (property == null)
-            {
-                return;
-            }
+            _codeBuilder.Line($"[{attribute}]");
+        }
 
-            _codeBuilder.AppendLine($"{Tabs(2)}public {property.Type} {property.Name} {{ get; set; }} ");
+        private void AddSummary(string summary)
+        {
+            _codeBuilder.Line("/// <summary>");
+            _codeBuilder.Line($"/// {summary}");
+            _codeBuilder.Line("/// </summary>");
         }
     }
 }
