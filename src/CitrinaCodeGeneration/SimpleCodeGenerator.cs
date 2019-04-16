@@ -17,6 +17,8 @@ namespace CitrinaCodeGeneration
 
         public async Task CreateSourceFileAsync(CSharpSourceFile sourceFile)
         {
+            _codeBuilder.Clear();
+
             if (string.IsNullOrWhiteSpace(sourceFile.Name))
             {
                 throw new ArgumentNullException(nameof(sourceFile.Name));
@@ -27,9 +29,12 @@ namespace CitrinaCodeGeneration
                 sourceFile.Name += ".cs";
             }
 
-            foreach (var usingName in sourceFile.Usings)
+            foreach (var u in sourceFile.Usings)
             {
-                _codeBuilder.Line($"using {usingName};");
+                if (u.Value?.Invoke(sourceFile) ?? true)
+                {
+                    _codeBuilder.Line($"using {u.Key};");
+                }
             }
 
             _codeBuilder.Line();

@@ -8,6 +8,8 @@ namespace CitrinaCodeGeneration
 {
     public class SourceFilesProcessor
     {
+        private const string NamespaceName = "Citrina";
+
         private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
         {
             { "BaseBoolInt", "bool?" },
@@ -55,10 +57,10 @@ namespace CitrinaCodeGeneration
             return new CSharpSourceFile
             {
                 Name = $"gen\\{name}.cs",
-                Usings = new[] { "System", "System.Collections.Generic", "Newtonsoft.Json" },
+                Usings = PrepareUsings(),
                 Namespace = new CSharpNamespace
                 {
-                    Name = "Citrina",
+                    Name = NamespaceName,
                     Classes = new List<CSharpClass> { ConvertToClass(obj) }
                 }
             };
@@ -69,7 +71,7 @@ namespace CitrinaCodeGeneration
             return new CSharpClass
             {
                 Name = obj.Name,
-                Properties = obj.Properties?.Select(ConvertToProperty)
+                Properties = obj.Properties?.Select(ConvertToProperty) ?? Enumerable.Empty<CSharpProperty>()
             };
         }
 
@@ -110,6 +112,25 @@ namespace CitrinaCodeGeneration
             }
 
             return "object";
+        }
+
+        private IDictionary<string, Predicate<CSharpSourceFile>> PrepareUsings()
+        {
+            return new Dictionary<string, Predicate<CSharpSourceFile>>
+            {
+                {"System", null},
+                {
+                    "System.Collections.Generic", sf =>
+                        sf.Namespace.Classes
+                            .Any(cl => cl.Properties?.Any(p => p.Type.StartsWith("IEnumerable")) ?? false)
+                },
+                {
+                    "Newtonsoft.Json", sf =>
+                        sf.Namespace.Classes
+                            .Any(cl => cl.Properties?.Any(p =>
+                                           p.Attributes?.Any(a => a.StartsWith("JsonProperty")) ?? false) ?? false)
+                }
+            };
         }
     }
 }

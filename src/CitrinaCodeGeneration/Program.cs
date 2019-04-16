@@ -15,13 +15,10 @@ namespace CitrinaCodeGeneration
             var codeGen = new SimpleCodeGenerator();
             var sourceFilesProcessor = new SourceFilesProcessor();
 
-            if (Directory.Exists("gen"))
+            if (!Directory.Exists("gen"))
             {
-                Directory.Delete("gen");
+                Directory.CreateDirectory("gen");
             }
-
-            Directory.CreateDirectory("gen");
-            
 
             var objects = vkApiSchema.Objects.Select(o => o.Value).OrderBy(o => o.Name);
 

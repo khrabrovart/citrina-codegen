@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace CitrinaCodeGeneration
@@ -8,9 +6,11 @@ namespace CitrinaCodeGeneration
     public class CodeBuilder
     {
         private readonly StringBuilder _sb = new StringBuilder();
-        private int _indent = 0;
+        private int _indent;
 
         public string Code => _sb.ToString();
+
+        public void Clear() => _sb.Clear();
 
         public void IncreaseIndent() => _indent++;
 

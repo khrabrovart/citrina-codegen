@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 
 namespace CitrinaCodeGeneration.CSharpCode
 {
@@ -6,7 +7,7 @@ namespace CitrinaCodeGeneration.CSharpCode
     {
         public string Name { get; set; }
 
-        public IEnumerable<string> Usings { get; set; }
+        public IDictionary<string, Predicate<CSharpSourceFile>> Usings { get; set; }
 
         public CSharpNamespace Namespace { get; set; }
     }
