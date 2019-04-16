@@ -8,7 +8,7 @@ namespace CitrinaCodeGeneration
 {
     public class SourceFilesProcessor
     {
-        private const string NamespaceName = "Citrina";
+        private const string NamespaceName = "VKontakte.Net.Models";
 
         private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
         {
@@ -118,7 +118,6 @@ namespace CitrinaCodeGeneration
         {
             return new Dictionary<string, Predicate<CSharpSourceFile>>
             {
-                {"System", null},
                 {
                     "System.Collections.Generic", sf =>
                         sf.Namespace.Classes
