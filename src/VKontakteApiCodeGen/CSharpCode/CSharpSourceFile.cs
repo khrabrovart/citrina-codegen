@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace VKontakteApiCodeGen.CSharpCode
 {
@@ -7,7 +6,7 @@ namespace VKontakteApiCodeGen.CSharpCode
     {
         public string Name { get; set; }
 
-        public IDictionary<string, Predicate<CSharpSourceFile>> Usings { get; set; }
+        public IEnumerable<string> Usings { get; set; }
 
         public CSharpNamespace Namespace { get; set; }
     }

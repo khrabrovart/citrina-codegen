@@ -8,12 +8,7 @@ namespace VKontakteApiCodeGen
 {
     public class SimpleCodeGenerator
     {
-        private readonly CodeBuilder _codeBuilder;
-
-        public SimpleCodeGenerator()
-        {
-            _codeBuilder = new CodeBuilder();
-        }
+        private readonly CodeBuilder _codeBuilder = new CodeBuilder();
 
         public async Task CreateSourceFileAsync(CSharpSourceFile sourceFile)
         {
@@ -29,15 +24,15 @@ namespace VKontakteApiCodeGen
                 sourceFile.Name += ".cs";
             }
 
-            foreach (var u in sourceFile.Usings)
+            if (sourceFile.Usings != null && sourceFile.Usings.Any())
             {
-                if (u.Value?.Invoke(sourceFile) ?? true)
+                foreach (var u in sourceFile.Usings)
                 {
-                    _codeBuilder.Line($"using {u.Key};");
+                    _codeBuilder.Line($"using {u};");
                 }
-            }
 
-            _codeBuilder.Line();
+                _codeBuilder.Line();
+            }
 
             if (sourceFile.Namespace != null)
             {
@@ -50,13 +45,44 @@ namespace VKontakteApiCodeGen
         private void AddNamespace(CSharpNamespace ns)
         {
             _codeBuilder.Line($"namespace {ns.Name}");
-            _codeBuilder.IterableBlock(ns.Classes?.ToArray(), AddClass, true);
+
+            if (ns.Classes != null && ns.Classes.Any())
+            {
+                _codeBuilder.IterableBlock(ns.Classes.ToArray(), AddClass);
+            }
+            else if (ns.Enums != null && ns.Enums.Any())
+            {
+                _codeBuilder.IterableBlock(ns.Enums.ToArray(), AddEnum);
+            }
         }
 
         private void AddClass(CSharpClass cl)
         {
             _codeBuilder.Line($"public class {cl.Name}");
-            _codeBuilder.IterableBlock(cl.Properties?.ToArray(), AddProperty, true);
+            _codeBuilder.IterableBlock(cl.Properties?.ToArray(), AddProperty);
+        }
+
+        private void AddEnum(CSharpEnum en)
+        {
+            _codeBuilder.Line($"public enum {en.Name}");
+            _codeBuilder.IterableBlock(en.Values.ToArray(), val => 
+            {
+                if (val.Value == null)
+                {
+                    _codeBuilder.Line($"{val.Key},");
+                    return;
+                }
+
+                if (int.TryParse(val.Value, out var intValue))
+                {
+                    _codeBuilder.Line($"{val.Key} = {val.Value},");
+                }
+                else
+                {
+                    AddAttribute($"EnumMember(Value = \"{val.Value}\")");
+                    _codeBuilder.Line($"{val.Key},");
+                }
+            });
         }
 
         private void AddProperty(CSharpProperty property)

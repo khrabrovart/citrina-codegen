@@ -31,7 +31,7 @@ namespace VKontakteApiCodeGen
             Line("}");
         }
 
-        public void IterableBlock<T>(T[] collection, Action<T> action, bool separate)
+        public void IterableBlock<T>(T[] collection, Action<T> action)
         {
             if (action == null)
             {
@@ -49,7 +49,7 @@ namespace VKontakteApiCodeGen
                 {
                     action(collection[i]);
 
-                    if (separate && i < collection.Length - 1)
+                    if (i < collection.Length - 1)
                     {
                         Line();
                     }

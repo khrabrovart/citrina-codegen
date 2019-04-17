@@ -9,6 +9,7 @@ namespace VKontakteApiCodeGen
     public class SourceFilesProcessor
     {
         private const string NamespaceName = "VKontakte.Net.Models";
+        private const string EnumsFileName = "Enums";
 
         private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
         {
@@ -23,15 +24,21 @@ namespace VKontakteApiCodeGen
         public void AddToSourceFile(ApiObject obj)
         {
             var name = GetSourceFileNameForObject(obj);
+            CSharpSourceFile sourceFile;
 
-            if (_sourceFiles.TryGetValue(name, out var sourceFile))
+            if (!_sourceFiles.TryGetValue(name, out sourceFile))
             {
-                sourceFile.Namespace.Classes.Add(ConvertToClass(obj));
+                sourceFile = CreateSourceFile(name);
+                _sourceFiles.Add(name, sourceFile);
             }
-            else
+
+            if (obj.Type == ApiObjectType.Object)
             {
-                var newSourceFile = CreateSourceFileWithObject(name, obj);
-                _sourceFiles.Add(name, newSourceFile);
+                sourceFile.Namespace.Classes.Add(obj.ToClass());
+            }
+            else if ((obj.Type == ApiObjectType.String || obj.Type == ApiObjectType.Integer) && obj.Enum != null)
+            {
+                sourceFile.Namespace.Enums.Add(obj.ToEnum());
             }
         }
 
@@ -42,12 +49,17 @@ namespace VKontakteApiCodeGen
                 throw new ArgumentNullException(nameof(obj));
             }
 
+            if (obj.Type == ApiObjectType.String && obj.Enum != null)
+            {
+                return EnumsFileName;
+            }
+
             var firstPart = obj.OriginalName.Split('_').First();
 
             return firstPart.First().ToString().ToUpper() + firstPart.Substring(1);
         }
 
-        private CSharpSourceFile CreateSourceFileWithObject(string name, ApiObject obj)
+        private CSharpSourceFile CreateSourceFile(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -57,77 +69,12 @@ namespace VKontakteApiCodeGen
             return new CSharpSourceFile
             {
                 Name = $"gen\\{name}.cs",
-                Usings = PrepareUsings(),
+                Usings = new[] { "System.Collections.Generic", "Newtonsoft.Json" },
                 Namespace = new CSharpNamespace
                 {
                     Name = NamespaceName,
-                    Classes = new List<CSharpClass> { ConvertToClass(obj) }
-                }
-            };
-        }
-
-        private CSharpClass ConvertToClass(ApiObject obj)
-        {
-            return new CSharpClass
-            {
-                Name = obj.Name,
-                Properties = obj.Properties?.Select(ConvertToProperty) ?? Enumerable.Empty<CSharpProperty>()
-            };
-        }
-
-        private CSharpProperty ConvertToProperty(ApiObject obj)
-        {
-            var invalidName = char.IsNumber(obj.Name.First());
-
-            return new CSharpProperty
-            {
-                Name = invalidName ? '_' + obj.Name : obj.Name,
-                Summary = obj.Description,
-                Type = GetType(obj),
-                Attributes = invalidName ? new[] { $"JsonProperty(\"{obj.OriginalName}\")" } : null
-            };
-        }
-
-        private string GetType(ApiObject obj)
-        {
-            // Handle primitive types
-            switch (obj.Type)
-            {
-                case ApiObjectType.Integer:
-                    return "int?";
-                case ApiObjectType.Boolean:
-                    return "bool?";
-                case ApiObjectType.Number:
-                    return "double?";
-                case ApiObjectType.String:
-                    return "string";
-                case ApiObjectType.Array:
-                    return "IEnumerable<object>";
-            }
-
-            // Handle references
-            if (obj.Reference != null)
-            {
-                return TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType) ? realType : obj.Reference.Name;
-            }
-
-            return "object";
-        }
-
-        private IDictionary<string, Predicate<CSharpSourceFile>> PrepareUsings()
-        {
-            return new Dictionary<string, Predicate<CSharpSourceFile>>
-            {
-                {
-                    "System.Collections.Generic", sf =>
-                        sf.Namespace.Classes
-                            .Any(cl => cl.Properties?.Any(p => p.Type.StartsWith("IEnumerable")) ?? false)
-                },
-                {
-                    "Newtonsoft.Json", sf =>
-                        sf.Namespace.Classes
-                            .Any(cl => cl.Properties?.Any(p =>
-                                           p.Attributes?.Any(a => a.StartsWith("JsonProperty")) ?? false) ?? false)
+                    Classes = new List<CSharpClass>(),
+                    Enums = new List<CSharpEnum>()
                 }
             };
         }

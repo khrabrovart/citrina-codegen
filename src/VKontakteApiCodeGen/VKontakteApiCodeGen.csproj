@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="VKApiSchemaParser" Version="1.0.0" />
+    <PackageReference Include="VKApiSchemaParser" Version="1.0.1" />
   </ItemGroup>
 
 </Project>

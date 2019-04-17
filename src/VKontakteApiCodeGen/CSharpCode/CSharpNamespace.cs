@@ -7,5 +7,7 @@ namespace VKontakteApiCodeGen.CSharpCode
         public string Name { get; set; }
 
         public IList<CSharpClass> Classes { get; set; }
+
+        public IList<CSharpEnum> Enums { get; set; }
     }
 }
