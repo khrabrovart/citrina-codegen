@@ -1,3 +1,3 @@
 # vkontakte-api-codegen
 
-Uses VKApiJsonSchema to generate all the models and methods for the VKontakte.Net
+Uses [VKApiSchemaParser](https://github.com/khrabrovart/vk-api-schema-parser) to generate all the models and methods for the [VKontakte.Net](https://github.com/khrabrovart/vkontakte-net)
