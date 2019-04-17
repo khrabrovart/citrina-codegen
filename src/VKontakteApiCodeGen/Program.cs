@@ -3,12 +3,10 @@ using System.Linq;
 using System.Threading.Tasks;
 using VKApiSchemaParser;
 
-namespace CitrinaCodeGeneration
+namespace VKontakteApiCodeGen
 {
     public class Program
     {
-
-
         public static async Task Main(string[] args)
         {
             var vkApiSchema = await VKApiSchema.ParseAsync();

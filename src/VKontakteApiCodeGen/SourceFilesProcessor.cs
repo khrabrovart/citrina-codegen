@@ -1,10 +1,10 @@
-﻿using CitrinaCodeGeneration.CSharpCode;
+﻿using VKontakteApiCodeGen.CSharpCode;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using VKApiSchemaParser.Models;
 
-namespace CitrinaCodeGeneration
+namespace VKontakteApiCodeGen
 {
     public class SourceFilesProcessor
     {

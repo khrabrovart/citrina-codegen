@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Text;
 
-namespace CitrinaCodeGeneration
+namespace VKontakteApiCodeGen
 {
     public class CodeBuilder
     {

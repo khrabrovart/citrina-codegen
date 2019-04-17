@@ -2,9 +2,9 @@
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
-using CitrinaCodeGeneration.CSharpCode;
+using VKontakteApiCodeGen.CSharpCode;
 
-namespace CitrinaCodeGeneration
+namespace VKontakteApiCodeGen
 {
     public class SimpleCodeGenerator
     {

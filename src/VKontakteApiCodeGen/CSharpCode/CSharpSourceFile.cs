@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace CitrinaCodeGeneration.CSharpCode
+namespace VKontakteApiCodeGen.CSharpCode
 {
     public class CSharpSourceFile
     {
