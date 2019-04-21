@@ -6,6 +6,8 @@ namespace VKontakteApiCodeGen.CSharpCode
     {
         public string Name { get; set; }
 
-        public IList<CSharpEnumKey> Keys { get; set; }
+        public string Summary { get; set; }
+
+        public IEnumerable<CSharpEnumKey> Keys { get; set; }
     }
 }

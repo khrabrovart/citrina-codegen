@@ -67,7 +67,7 @@ namespace VKontakteApiCodeGen
 
             return new CSharpSourceFile
             {
-                Name = $"gen\\{name}.cs",
+                Name = name,
                 Usings = DefaultUsings,
                 Namespace = new CSharpNamespace
                 {

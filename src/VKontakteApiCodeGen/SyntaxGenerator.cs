@@ -1,7 +1,4 @@
-﻿using System;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+﻿using System.Linq;
 using VKontakteApiCodeGen.CSharpCode;
 
 namespace VKontakteApiCodeGen
@@ -13,16 +10,6 @@ namespace VKontakteApiCodeGen
         public string GenerateSourceFileSyntax(CSharpSourceFile sourceFile)
         {
             _codeBuilder.Clear();
-
-            if (string.IsNullOrWhiteSpace(sourceFile.Name))
-            {
-                throw new ArgumentNullException(nameof(sourceFile.Name));
-            }
-
-            if (!sourceFile.Name.EndsWith(".cs"))
-            {
-                sourceFile.Name += ".cs";
-            }
 
             if (sourceFile.Usings != null && sourceFile.Usings.Any())
             {
@@ -58,12 +45,26 @@ namespace VKontakteApiCodeGen
 
         private void AddClass(CSharpClass cl)
         {
-            _codeBuilder.Line($"public class {cl.Name}");
+            // Temporarily disable descriptions
+            //if (!string.IsNullOrWhiteSpace(cl.Summary))
+            //{
+            //    AddSummary(cl.Summary);
+            //}
+
+            var baseClassSyntax = cl.BaseClass != null ? $" : {cl.BaseClass}" : null;
+
+            _codeBuilder.Line($"public class {cl.Name}{baseClassSyntax}");
             _codeBuilder.IterableBlock(cl.Properties?.ToArray(), AddProperty);
         }
 
         private void AddEnum(CSharpEnum en)
         {
+            // Temporarily disable descriptions
+            //if (!string.IsNullOrWhiteSpace(en.Summary))
+            //{
+            //    AddSummary(en.Summary);
+            //}
+
             _codeBuilder.Line($"public enum {en.Name}");
             _codeBuilder.IterableBlock(en.Keys.ToArray(), key => 
             {

@@ -19,45 +19,57 @@ namespace VKontakteApiCodeGen.Extensions
 
         public static CSharpClass ToClass(this ApiObject obj)
         {
+            string baseClass = null;
+            IEnumerable<CSharpProperty> properties = null;
+
+            if (obj.AllOf != null && obj.AllOf.First().OneOf == null)
+            {
+                baseClass = obj.AllOf.FirstOrDefault(o => o.Name != null)?.Name.ToBeautifiedName();
+                properties = obj.AllOf
+                    .Where(o => o.Name == null)
+                    .SelectMany(o => o.Properties)
+                    .Select(ToAutoProperty);
+            }
+            else
+            {
+                properties = obj.Properties?.Select(ToAutoProperty);
+            }
+
             return new CSharpClass
             {
                 Name = obj.Name.ToBeautifiedName(),
-                Properties = obj.Properties?.Select(ToAutoProperty) ?? Enumerable.Empty<CSharpProperty>()
+                Summary = obj.Description,
+                Properties = properties?.ToArray() ?? Enumerable.Empty<CSharpProperty>(),
+                BaseClass = baseClass
             };
         }
 
         public static CSharpEnum ToEnum(this ApiObject obj)
         {
-            IList<CSharpEnumKey> keys;
-
-            var isNumberEnum = char.IsNumber(obj.Enum.First()[0]);
+            IEnumerable<CSharpEnumKey> keys;
 
             if (obj.EnumNames != null)
             {
+                var isNumberEnum = obj.Enum.All(v => char.IsNumber(v[0]));
+
                 if (isNumberEnum)
                 {
-                    keys = obj.EnumNames.Select(n => new CSharpEnumKey(n.ToBeautifiedName())).ToList();
+                    keys = obj.EnumNames.Select(v => new CSharpEnumKey(v.ToBeautifiedName()));
                 }
                 else
                 {
-                    keys = obj.Enum
-                        .Zip(obj.EnumNames, (val, name) => new CSharpEnumKey(name.ToBeautifiedName(), val))
-                        .ToList();
+                    keys = obj.Enum.Zip(obj.EnumNames, (val, name) => new CSharpEnumKey(name.ToBeautifiedName(), val));
                 }
             }
             else
             {
-                keys = new List<CSharpEnumKey>();
-
-                foreach (var key in obj.Enum)
-                {
-                    keys.Add(new CSharpEnumKey(key.ToBeautifiedName(), key));
-                }
+                keys = obj.Enum.Select(v => new CSharpEnumKey(v.ToBeautifiedName(), v));
             }
 
             return new CSharpEnum
             {
                 Name = obj.Name.ToBeautifiedName(),
+                Summary = obj.Description,
                 Keys = keys
             };
         }
@@ -73,21 +85,36 @@ namespace VKontakteApiCodeGen.Extensions
             };
         }
 
-        public static string GetCSharpType(this ApiObject obj)
+        public static string GetCSharpType(this ApiObject obj, bool nullablePrimitives = true)
         {
             // Handle primitive types
             switch (obj.Type)
             {
                 case ApiObjectType.Integer:
-                    return "int?";
+                    return nullablePrimitives ? "int?" : "int";
+
                 case ApiObjectType.Boolean:
-                    return "bool?";
+                    return nullablePrimitives ? "bool?" : "bool";
+
                 case ApiObjectType.Number:
-                    return "double?";
+                    return nullablePrimitives ? "double?" : "double";
+
+                case ApiObjectType.Multiple:
                 case ApiObjectType.String:
                     return "string";
+
                 case ApiObjectType.Array:
-                    return "IEnumerable<object>";
+
+                    if (obj.Items != null)
+                    {
+                        var genericType = string.IsNullOrWhiteSpace(obj.Items.Name) ? 
+                            obj.Items.GetCSharpType(false) : 
+                            obj.Items.Name.ToBeautifiedName();
+
+                        return $"IEnumerable<{genericType}>";
+                    }
+
+                    return "IEnumerable<object>"; // Maybe throw an exception here later...?
             }
 
             // Handle references
@@ -96,7 +123,7 @@ namespace VKontakteApiCodeGen.Extensions
                 return TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType) ? realType : obj.Reference.Name.ToBeautifiedName();
             }
 
-            return "object";
+            return "object"; // Maybe throw an exception here later...?
         }
     }
 }
