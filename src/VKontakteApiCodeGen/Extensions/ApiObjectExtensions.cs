@@ -3,62 +3,73 @@ using System.Linq;
 using VKApiSchemaParser.Models;
 using VKontakteApiCodeGen.CSharpCode;
 
-namespace VKontakteApiCodeGen
+namespace VKontakteApiCodeGen.Extensions
 {
     public static class ApiObjectExtensions
     {
         private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
         {
-            { "BaseBoolInt", "bool?" },
-            { "BaseOkResponse", "bool?" }
+            { "base_bool_int", "bool?" },
+            { "base_ok_response", "bool?" }
         };
+
+        private static readonly IEnumerable<ApiObjectType> EnumTypes = new[] { ApiObjectType.String, ApiObjectType.Integer };
+
+        public static bool IsEnum(this ApiObject obj) => EnumTypes.Contains(obj.Type) && obj.Enum != null;
 
         public static CSharpClass ToClass(this ApiObject obj)
         {
             return new CSharpClass
             {
-                Name = obj.Name,
+                Name = obj.Name.ToBeautifiedName(),
                 Properties = obj.Properties?.Select(ToAutoProperty) ?? Enumerable.Empty<CSharpProperty>()
             };
         }
 
         public static CSharpEnum ToEnum(this ApiObject obj)
         {
-            IList<KeyValuePair<string, string>> values;
+            IList<CSharpEnumKey> keys;
+
+            var isNumberEnum = char.IsNumber(obj.Enum.First()[0]);
 
             if (obj.EnumNames != null)
             {
-                values = obj.Enum.Zip(obj.EnumNames, (val, name) => KeyValuePair.Create(name, val)).ToList();
+                if (isNumberEnum)
+                {
+                    keys = obj.EnumNames.Select(n => new CSharpEnumKey(n.ToBeautifiedName())).ToList();
+                }
+                else
+                {
+                    keys = obj.Enum
+                        .Zip(obj.EnumNames, (val, name) => new CSharpEnumKey(name.ToBeautifiedName(), val))
+                        .ToList();
+                }
             }
             else
             {
-                values = new List<KeyValuePair<string, string>>();
-                var index = 0;
+                keys = new List<CSharpEnumKey>();
 
-                foreach (var val in obj.Enum)
+                foreach (var key in obj.Enum)
                 {
-                    values.Add(new KeyValuePair<string, string>(val, index.ToString()));
-                    index++;
+                    keys.Add(new CSharpEnumKey(key.ToBeautifiedName(), key));
                 }
             }
 
             return new CSharpEnum
             {
-                Name = obj.Name,
-                Values = values
+                Name = obj.Name.ToBeautifiedName(),
+                Keys = keys
             };
         }
 
         public static CSharpProperty ToAutoProperty(this ApiObject obj)
         {
-            var invalidName = char.IsNumber(obj.Name.First());
-
             return new CSharpProperty
             {
-                Name = invalidName ? '_' + obj.Name : obj.Name,
+                Name = obj.Name.ToBeautifiedName(),
                 Summary = obj.Description,
                 Type = GetCSharpType(obj),
-                Attributes = invalidName ? new[] { $"JsonProperty(\"{obj.OriginalName}\")" } : null
+                Attributes = obj.Name.IsValidName() ? null : new[] { $"JsonProperty(\"{obj.Name}\")" }
             };
         }
 
@@ -82,7 +93,7 @@ namespace VKontakteApiCodeGen
             // Handle references
             if (obj.Reference != null)
             {
-                return TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType) ? realType : obj.Reference.Name;
+                return TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType) ? realType : obj.Reference.Name.ToBeautifiedName();
             }
 
             return "object";

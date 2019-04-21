@@ -6,11 +6,11 @@ using VKontakteApiCodeGen.CSharpCode;
 
 namespace VKontakteApiCodeGen
 {
-    public class SimpleCodeGenerator
+    public class SyntaxGenerator
     {
         private readonly CodeBuilder _codeBuilder = new CodeBuilder();
 
-        public async Task CreateSourceFileAsync(CSharpSourceFile sourceFile)
+        public string GenerateSourceFileSyntax(CSharpSourceFile sourceFile)
         {
             _codeBuilder.Clear();
 
@@ -39,7 +39,7 @@ namespace VKontakteApiCodeGen
                 AddNamespace(sourceFile.Namespace);
             }
 
-            await File.WriteAllTextAsync(sourceFile.Name, _codeBuilder.Code);
+            return _codeBuilder.Code;
         }
 
         private void AddNamespace(CSharpNamespace ns)
@@ -65,23 +65,14 @@ namespace VKontakteApiCodeGen
         private void AddEnum(CSharpEnum en)
         {
             _codeBuilder.Line($"public enum {en.Name}");
-            _codeBuilder.IterableBlock(en.Values.ToArray(), val => 
+            _codeBuilder.IterableBlock(en.Keys.ToArray(), key => 
             {
-                if (val.Value == null)
+                if (key.Value != null && !int.TryParse(key.Value, out var intValue))
                 {
-                    _codeBuilder.Line($"{val.Key},");
-                    return;
+                    AddAttribute($"EnumMember(Value = \"{key.Value}\")");
                 }
 
-                if (int.TryParse(val.Value, out var intValue))
-                {
-                    _codeBuilder.Line($"{val.Key} = {val.Value},");
-                }
-                else
-                {
-                    AddAttribute($"EnumMember(Value = \"{val.Value}\")");
-                    _codeBuilder.Line($"{val.Key},");
-                }
+                _codeBuilder.Line($"{key.Name},");
             });
         }
 

@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using VKApiSchemaParser.Models;
+using VKontakteApiCodeGen.Extensions;
 
 namespace VKontakteApiCodeGen
 {
@@ -11,10 +12,9 @@ namespace VKontakteApiCodeGen
         private const string NamespaceName = "VKontakte.Net.Models";
         private const string EnumsFileName = "Enums";
 
-        private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
+        private static readonly IEnumerable<string> DefaultUsings = new[]
         {
-            { "BaseBoolInt", "bool?" },
-            { "BaseOkResponse", "bool?" }
+            "System.Collections.Generic", "Newtonsoft.Json"
         };
 
         private readonly IDictionary<string, CSharpSourceFile> _sourceFiles = new Dictionary<string, CSharpSourceFile>();
@@ -32,34 +32,33 @@ namespace VKontakteApiCodeGen
                 _sourceFiles.Add(name, sourceFile);
             }
 
-            if (obj.Type == ApiObjectType.Object)
-            {
-                sourceFile.Namespace.Classes.Add(obj.ToClass());
-            }
-            else if ((obj.Type == ApiObjectType.String || obj.Type == ApiObjectType.Integer) && obj.Enum != null)
+            if (obj.IsEnum())
             {
                 sourceFile.Namespace.Enums.Add(obj.ToEnum());
             }
+            else
+            {
+                sourceFile.Namespace.Classes.Add(obj.ToClass());
+            }
         }
 
-        private string GetSourceFileNameForObject(ApiObject obj)
+        private static string GetSourceFileNameForObject(ApiObject obj)
         {
             if (obj == null)
             {
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            if (obj.Type == ApiObjectType.String && obj.Enum != null)
+            if (obj.IsEnum())
             {
                 return EnumsFileName;
             }
 
-            var firstPart = obj.OriginalName.Split('_').First();
-
+            var firstPart = obj.Name.Split('_').First();
             return firstPart.First().ToString().ToUpper() + firstPart.Substring(1);
         }
 
-        private CSharpSourceFile CreateSourceFile(string name)
+        private static CSharpSourceFile CreateSourceFile(string name)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -69,7 +68,7 @@ namespace VKontakteApiCodeGen
             return new CSharpSourceFile
             {
                 Name = $"gen\\{name}.cs",
-                Usings = new[] { "System.Collections.Generic", "Newtonsoft.Json" },
+                Usings = DefaultUsings,
                 Namespace = new CSharpNamespace
                 {
                     Name = NamespaceName,
