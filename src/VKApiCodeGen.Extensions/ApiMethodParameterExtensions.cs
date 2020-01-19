@@ -1,32 +1,30 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using VKApiSchemaParser.Models;
 
 namespace VKApiCodeGen.Extensions
 {
     public static class ApiMethodParameterExtensions
     {
-        private static readonly IDictionary<string, string> TrickyTypesMap = new Dictionary<string, string>
-        {
-            { "base_bool_int", "bool?" },
-            { "base_ok_response", "bool?" }
-        };
-
         private static readonly IEnumerable<ApiObjectType> EnumObjectTypes = new[] { ApiObjectType.String, ApiObjectType.Integer };
-        private static readonly IEnumerable<ApiObjectType> ClassObjectTypes = new[] { ApiObjectType.Object };
 
-        public static string GetCSharpType(this ApiMethodParameter parameter, bool preferNullable = true)
+        public static bool IsEnum(this ApiMethodParameter parameter) => EnumObjectTypes.Contains(parameter.Type) && parameter.Enum != null;
+
+        public static bool IsArray(this ApiMethodParameter parameter) => parameter.Type == ApiObjectType.Array && parameter.Items != null;
+
+        public static string GetCSharpType(this ApiMethodParameter parameter)
         {
             // Handle primitive types
             switch (parameter.Type)
             {
                 case ApiObjectType.Integer:
-                    return preferNullable ? "int?" : "int";
+                    return "int?";
 
                 case ApiObjectType.Boolean:
-                    return preferNullable ? "bool?" : "bool";
+                    return "bool?";
 
                 case ApiObjectType.Number:
-                    return preferNullable ? "double?" : "double";
+                    return "double?";
 
                 case ApiObjectType.Multiple: // TODO: Think about this type
                 case ApiObjectType.String:

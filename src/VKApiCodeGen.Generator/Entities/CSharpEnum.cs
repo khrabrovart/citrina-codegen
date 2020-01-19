@@ -13,7 +13,7 @@ namespace VKApiCodeGen.Generator.Entities
 
         public IDictionary<string, string> Keys { get; set; }
 
-        public static CSharpEnum Map(ApiObject obj)
+        public static CSharpEnum FromObject(IApiEnumEntity obj, string name = null)
         {
             IDictionary<string, string> keys;
 
@@ -39,7 +39,7 @@ namespace VKApiCodeGen.Generator.Entities
 
             return new CSharpEnum
             {
-                Name = obj.Name.ToBeautifiedName(),
+                Name = string.IsNullOrWhiteSpace(name) ? obj.Name.ToBeautifiedName() : name,
                 Summary = new CSharpSummary(obj.Description),
                 Keys = keys
             };

@@ -28,7 +28,7 @@ namespace VKApiCodeGen.Generator.Entities
                 Name = obj.Name.ToBeautifiedName(),
                 Summary = string.IsNullOrWhiteSpace(obj.Description) ? null : new CSharpSummary(obj.Description),
                 Properties = propertyObjects.Where(o => !o.IsEnum()).Select(CSharpProperty.Map).ToList(),
-                NestedEnums = propertyObjects.Where(o => o.IsEnum()).Select(CSharpEnum.Map).ToList()
+                NestedEnums = propertyObjects.Where(o => o.IsEnum()).Select(o => CSharpEnum.FromObject(o)).ToList()
             };
         }
 
@@ -57,6 +57,7 @@ namespace VKApiCodeGen.Generator.Entities
             builder.Block(() =>
             {
                 WriteIterableSyntax(builder, NestedEnums?.ToArray());
+                WriteIterableSyntax(builder, Methods?.SelectMany(m => m.EnumParameters).ToArray());
                 WriteIterableSyntax(builder, Properties?.ToArray());
                 WriteIterableSyntax(builder, Methods);
             });

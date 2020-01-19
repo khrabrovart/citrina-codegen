@@ -54,7 +54,17 @@ namespace VKApiCodeGen.Extensions
             // Handle references
             if (obj.Reference != null)
             {
-                return TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType) ? realType : obj.Reference.Name.ToBeautifiedName();
+                if (TrickyTypesMap.TryGetValue(obj.Reference.Name, out var realType))
+                {
+                    return realType;
+                }
+
+                if (!obj.Reference.IsClass())
+                {
+                    return obj.Reference.GetCSharpType(true);
+                }
+                
+                return obj.Reference.Name.ToBeautifiedName();
             }
 
             return "object"; // TODO: Maybe throw an exception here later...?

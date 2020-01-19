@@ -30,14 +30,15 @@ namespace VKApiCodeGen.Generator.Entities
 
                     var mappingString = GetParameterMappingString(
                         parameter.Name.ToBeautifiedName(StringCase.Camel),
-                        parameter.GetCSharpType(true));
+                        parameter.GetCSharpType());
 
                     builder.Line($"[\"{parameter.Name}\"] = {mappingString},");
                 }
             }, insertSemicolon: true);
 
             builder.Line();
-            builder.Line($"return RequestManager.CreateRequestAsync<{Response.GetCSharpType()}>(\"{Method.FullName}\", accessToken, request);");
+            // добавить sccessToken
+            builder.Line($"return RequestManager.CreateRequestAsync<{Response.GetCSharpType()}>(\"{Method.FullName}\", null, request);");
         }
 
         private static string GetParameterMappingString(string parameterName, string parameterType)

@@ -8,11 +8,11 @@ namespace VKApiCodeGen.Generator.Entities
 {
     public class CSharpSourceFile : ISyntaxEntity
     {
-        private const string NamespaceName = "CitrinaVK.Models";
+        private const string NamespaceName = "Citrina"; // изменять для моделей и методов
 
-        private static readonly IEnumerable<string> DefaultUsings = new[]
+        private static readonly IEnumerable<string> DefaultUsings = new[] // не везде они нужны
         {
-            "System.Collections.Generic", "Newtonsoft.Json"
+            "System.Collections.Generic", "System.Threading.Tasks", "Newtonsoft.Json"
         };
 
         public string Name { get; set; }
@@ -43,7 +43,7 @@ namespace VKApiCodeGen.Generator.Entities
 
             if (obj.IsEnum())
             {
-                sourceFile.Enum = CSharpEnum.Map(obj);
+                sourceFile.Enum = CSharpEnum.FromObject(obj);
             }
             else if (obj.IsClass())
             {

@@ -1,16 +1,19 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading.Tasks;
 using VKApiCodeGen.Extensions;
 using VKApiCodeGen.Generator.Entities;
 using VKApiSchemaParser;
+using VKApiSchemaParser.Models;
 
 namespace VKApiCodeGen
 {
     // Проверить объекты ответов от методов
-    // Создать enum-ы для параметров методов
     // Сделать, чтобы из int? делался DateTime? для Юникстайма
+    // Подумать как лучше сделать аксесс токены
+    // Убрать запятые на последних строках enum-ов и в других местах
     public class Program
     {
         private const string ParentDirectory = "gen";
@@ -39,42 +42,16 @@ namespace VKApiCodeGen
                 var responses = vkApiSchema.Responses.Select(o => o.Value);
                 var methods = vkApiSchema.Methods.Select(m => m.Value);
 
-                Console.WriteLine("Creating objects classes");
+                Console.WriteLine("Generating syntax");
 
-                foreach (var obj in objects)
-                {
-                    var objectClass = CSharpSourceFile.FromObject(obj);
-                    sourcesManager.AddToSourceGroup(Path.Combine(ObjectsDirectory, obj.Name.Split('_')[0].ToBeautifiedName()), objectClass);
-                }
+                AddObjects(objects, ObjectsDirectory);
+                AddObjects(responses, ResponsesDirectory);
+                AddMethods(methods, InterfacesDirectory, MethodsDirectory);
 
-                Console.WriteLine("Creating responses classes");
+                Console.WriteLine("Writing files");
 
-                foreach (var response in responses)
-                {
-                    var responseClass = CSharpSourceFile.FromObject(response);
-                    sourcesManager.AddToSourceGroup(Path.Combine(ResponsesDirectory, response.Name.Split('_')[0].ToBeautifiedName()), responseClass);
-                }
-
-                Console.WriteLine("Creating methods interfaces and classes");
-
-                var methodGroups = methods.GroupBy(m => m.Category);
-
-                foreach (var methodGroup in methodGroups)
-                {
-                    var methodsInterface = CSharpSourceFile.FromMethods(methodGroup.ToArray(), asInterface: true);
-                    var methodsClass = CSharpSourceFile.FromMethods(methodGroup.ToArray(), asInterface: false);
-
-                    sourcesManager.AddToSourceGroup(Path.Combine(InterfacesDirectory), methodsInterface);
-                    sourcesManager.AddToSourceGroup(Path.Combine(MethodsDirectory), methodsClass);
-                }
-
-                foreach (var sourceCategory in sourcesManager.SourceGroups)
-                {
-                    foreach (var sourceFile in sourceCategory.Value)
-                    {
-                        await WriteSourceFile(sourceFile, $"{sourceCategory.Key}");
-                    }
-                }
+                var writingTasks = sourcesManager.SourceGroups.SelectMany(sg => sg.Value.Select(sf => WriteSourceFile(sf, $"{sg.Key}")));
+                await Task.WhenAll(writingTasks);
 
                 Console.WriteLine($"\nComplete! Check \"{ParentDirectory}\" directory for output files.\nPress any key to exit...");
                 Console.ReadKey();
@@ -83,6 +60,29 @@ namespace VKApiCodeGen
             {
                 Console.WriteLine(e);
                 Console.ReadKey();
+            }
+        }
+
+        private static void AddObjects(IEnumerable<ApiObject> objects, string directory)
+        {
+            foreach (var obj in objects)
+            {
+                var objectClass = CSharpSourceFile.FromObject(obj);
+                sourcesManager.AddToSourceGroup(Path.Combine(directory, obj.Name.Split('_')[0].ToBeautifiedName()), objectClass);
+            }
+        }
+
+        private static void AddMethods(IEnumerable<ApiMethod> methods, string interfacesDirectory, string methodsDirectory)
+        {
+            var methodGroups = methods.GroupBy(m => m.Category);
+
+            foreach (var methodGroup in methodGroups)
+            {
+                var methodsInterface = CSharpSourceFile.FromMethods(methodGroup.ToArray(), asInterface: true);
+                var methodsClass = CSharpSourceFile.FromMethods(methodGroup.ToArray(), asInterface: false);
+
+                sourcesManager.AddToSourceGroup(interfacesDirectory, methodsInterface);
+                sourcesManager.AddToSourceGroup(methodsDirectory, methodsClass);
             }
         }
 
