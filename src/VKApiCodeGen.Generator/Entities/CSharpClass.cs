@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using VKApiCodeGen.Extensions;
 using VKApiSchemaParser.Models;
@@ -28,7 +29,8 @@ namespace VKApiCodeGen.Generator.Entities
                 Name = obj.Name.ToBeautifiedName(),
                 Summary = string.IsNullOrWhiteSpace(obj.Description) ? null : new CSharpSummary(obj.Description),
                 Properties = propertyObjects.Where(o => !o.IsEnum()).Select(CSharpProperty.Map).ToList(),
-                NestedEnums = propertyObjects.Where(o => o.IsEnum()).Select(o => CSharpEnum.FromObject(o)).ToList()
+                NestedEnums = propertyObjects.Where(o => o.IsEnum()).Select(o => CSharpEnum.FromObject(o)).ToList(),
+                Methods = Array.Empty<CSharpMethod>()
             };
         }
 
@@ -40,7 +42,9 @@ namespace VKApiCodeGen.Generator.Entities
             {
                 Name = name,
                 Interface = 'I' + name,
-                Methods = methods.SelectMany(m => CSharpMethod.Map(m, false)).ToArray()
+                Methods = methods.SelectMany(m => CSharpMethod.Map(m, false)).ToArray(),
+                Properties = Array.Empty<CSharpProperty>(),
+                NestedEnums = Array.Empty<CSharpEnum>(),
             };
         }
 
@@ -56,10 +60,47 @@ namespace VKApiCodeGen.Generator.Entities
             builder.Line($"public class {Name}{interfaceString}");
             builder.Block(() =>
             {
-                WriteIterableSyntax(builder, NestedEnums?.ToArray());
-                WriteIterableSyntax(builder, Methods?.SelectMany(m => m.EnumParameters).ToArray());
-                WriteIterableSyntax(builder, Properties?.ToArray());
-                WriteIterableSyntax(builder, Methods);
+                var notEmpty = false;
+
+                if (NestedEnums.Any())
+                {
+                    WriteIterableSyntax(builder, NestedEnums.ToArray());
+                    notEmpty = true;
+                }
+
+                var enumParameters = Methods.SelectMany(m => m.EnumParameters).ToArray();
+
+                if (enumParameters.Any())
+                {
+                    if (notEmpty)
+                    {
+                        builder.Line();
+                    }
+
+                    WriteIterableSyntax(builder, enumParameters);
+                    notEmpty = true;
+                }
+
+                if (Properties.Any())
+                {
+                    if (notEmpty)
+                    {
+                        builder.Line();
+                    }
+
+                    WriteIterableSyntax(builder, Properties.ToArray());
+                    notEmpty = true;
+                }
+
+                if (Methods.Any())
+                {
+                    if (notEmpty)
+                    {
+                        builder.Line();
+                    }
+
+                    WriteIterableSyntax(builder, Methods);
+                }
             });
         }
 
@@ -86,11 +127,6 @@ namespace VKApiCodeGen.Generator.Entities
 
         private static void WriteIterableSyntax(SyntaxBuilder builder, ISyntaxEntity[] syntaxEntities)
         {
-            if (syntaxEntities == null)
-            {
-                return;
-            }
-
             for (int i = 0; i < syntaxEntities.Length; i++)
             {
                 syntaxEntities[i].WriteSyntax(builder);

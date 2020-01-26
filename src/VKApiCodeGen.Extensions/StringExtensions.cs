@@ -40,7 +40,7 @@ namespace VKApiCodeGen.Extensions
 
         private static string Beautify(string str, StringCase strCase)
         {
-            var trimmed = str?.Trim();
+            var trimmed = str?.Trim(' ', '_');
 
             if (string.IsNullOrWhiteSpace(str))
             {

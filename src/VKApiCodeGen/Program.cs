@@ -12,8 +12,6 @@ namespace VKApiCodeGen
 {
     // Проверить объекты ответов от методов
     // Сделать, чтобы из int? делался DateTime? для Юникстайма
-    // Подумать как лучше сделать аксесс токены
-    // Убрать запятые на последних строках enum-ов и в других местах
     public class Program
     {
         private const string ParentDirectory = "gen";

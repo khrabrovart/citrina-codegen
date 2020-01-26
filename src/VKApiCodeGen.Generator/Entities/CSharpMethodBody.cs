@@ -32,13 +32,12 @@ namespace VKApiCodeGen.Generator.Entities
                         parameter.Name.ToBeautifiedName(StringCase.Camel),
                         parameter.GetCSharpType());
 
-                    builder.Line($"[\"{parameter.Name}\"] = {mappingString},");
+                    builder.Line($"{{\"{parameter.Name}\", {mappingString}}},");
                 }
             }, insertSemicolon: true);
 
             builder.Line();
-            // добавить sccessToken
-            builder.Line($"return RequestManager.CreateRequestAsync<{Response.GetCSharpType()}>(\"{Method.FullName}\", null, request);");
+            builder.Line($"return RequestManager.CreateRequestAsync<{Response.GetCSharpType()}>(\"{Method.FullName}\", accessToken, request);");
         }
 
         private static string GetParameterMappingString(string parameterName, string parameterType)

@@ -55,8 +55,10 @@ namespace VKApiCodeGen.Generator.Entities
             builder.Line($"public enum {Name}");
             builder.Block(() =>
             {
-                foreach (var key in Keys)
+                for (int i = 0; i < Keys.Count; i++)
                 {
+                    var key = Keys[i];
+
                     if (key.Value != null && !int.TryParse(key.Value, out var intValue))
                     {
                         new CSharpAttribute($"EnumMember(Value = \"{key.Value}\")").WriteSyntax(builder);

@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using VKApiCodeGen.Extensions;
 using VKApiSchemaParser.Models;
@@ -7,6 +8,15 @@ namespace VKApiCodeGen.Generator.Entities
 {
     public class CSharpMethod : ISyntaxEntity
     {
+        private static readonly IDictionary<ApiAccessTokenType, string> AccessTokenTypesMap = new Dictionary<ApiAccessTokenType, string>
+        {
+            { ApiAccessTokenType.Service, "ServiceAccessToken" },
+            { ApiAccessTokenType.User, "UserAccessToken" },
+            { ApiAccessTokenType.Group, "GroupAccessToken" },
+            { ApiAccessTokenType.Open, null },
+            { ApiAccessTokenType.Undefined, null }
+        };
+
         public string Name { get; set; }
 
         public CSharpSummary Summary { get; set; }
@@ -22,12 +32,31 @@ namespace VKApiCodeGen.Generator.Entities
 
         public static CSharpMethod[] Map(ApiMethod method, bool forInterface)
         {
-            return method.Responses
-                .Select(response =>
+            var outputMethods = new List<CSharpMethod>();
+            var enums = new Dictionary<string, CSharpEnum>();
+
+            foreach (var response in method.Responses)
+            {
+                if (!method.AccessTokenTypes.Any())
                 {
-                    var name = method.Name.ToBeautifiedName();
+                    throw new Exception("Access token types not found.");
+                }
+
+                var tokenTypes = method.AccessTokenTypes.ToArray();
+
+                for (int i = 0; i < tokenTypes.Length; i++)
+                {
+                    var responseName = response.Name.EndsWith("Response") ? response.Name[0..^8].ToBeautifiedName() : null;
+                    var methodName = method.Name.ToBeautifiedName();
+                    var methodNameByResponse = responseName == null ? methodName : $"{methodName}_{responseName}";
+
                     var parameters = new Dictionary<string, string>();
-                    var enums = new List<CSharpEnum>();
+                    var accessTokenType = GetAccessTokenTypeName(tokenTypes[i]);
+
+                    if (accessTokenType != null)
+                    {
+                        parameters.Add("accessToken", accessTokenType);
+                    }
 
                     foreach (var p in method.Parameters ?? Enumerable.Empty<ApiMethodParameter>())
                     {
@@ -35,19 +64,26 @@ namespace VKApiCodeGen.Generator.Entities
 
                         if (p.IsEnum())
                         {
-                            
-                            var typeName = $"{name}_{p.Name.ToBeautifiedName()}";
+                            var typeName = $"{methodName}_{p.Name.ToBeautifiedName()}";
 
                             parameters.Add(parameterName, typeName);
-                            enums.Add(CSharpEnum.FromObject(p, typeName));
+
+                            if (!enums.ContainsKey(typeName))
+                            {
+                                enums.Add(typeName, CSharpEnum.FromObject(p, typeName));
+                            }
                         }
                         // Check if enum is in array and it's not a reference (references have names)
                         else if (p.IsArray() && p.Items.IsEnum() && p.Items.Name == null)
                         {
-                            var typeName = $"{name}{p.Name.ToBeautifiedName()}";
+                            var typeName = $"{methodName}_{p.Name.ToBeautifiedName()}";
 
                             parameters.Add(parameterName, $"IEnumerable<{typeName}>");
-                            enums.Add(CSharpEnum.FromObject(p.Items, typeName));
+
+                            if (!enums.ContainsKey(typeName))
+                            {
+                                enums.Add(typeName, CSharpEnum.FromObject(p.Items, typeName));
+                            }
                         }
                         else
                         {
@@ -55,17 +91,21 @@ namespace VKApiCodeGen.Generator.Entities
                         }
                     }
 
-                    return new CSharpMethod
+                    var newMethod = new CSharpMethod
                     {
-                        Name = name,
+                        Name = methodNameByResponse,
                         Summary = new CSharpSummary(method.Description),
                         ReturnType = response.GetCSharpType(),
                         Parameters = parameters,
-                        EnumParameters = enums.ToArray(),
+                        EnumParameters = responseName == null && i == 0 ? enums.Values.ToArray() : Array.Empty<CSharpEnum>(),
                         Body = forInterface ? null : new CSharpMethodBody(method, response)
                     };
-                })
-                .ToArray();
+
+                    outputMethods.Add(newMethod);
+                }
+            }
+
+            return outputMethods.ToArray();
         }
 
         public void WriteSyntax(SyntaxBuilder builder)
@@ -75,11 +115,20 @@ namespace VKApiCodeGen.Generator.Entities
                 Summary.WriteSyntax(builder);
             }
 
-            var paramsString = Parameters != null 
-                ? string.Join(", ", Parameters.Select(p => $"{p.Value} {p.Key} = null")) 
-                : string.Empty;
+            var parameters = Parameters.Select(p => 
+            {
+                var parameterString = $"{p.Value} {p.Key}";
 
-            var methodDeclaration = $"Task<ApiRequest<{ReturnType}>> {Name}({paramsString})";
+                if (p.Key != "accessToken")
+                {
+                    parameterString += " = null";
+                }
+
+                return parameterString;
+            });
+
+            var parametersString = Parameters != null ? string.Join(", ", parameters) : string.Empty;
+            var methodDeclaration = $"Task<ApiRequest<{ReturnType}>> {Name}({parametersString})";
 
             if (Body == null)
             {
@@ -90,6 +139,13 @@ namespace VKApiCodeGen.Generator.Entities
                 builder.Line("public " + methodDeclaration);
                 builder.Block(() => Body.WriteSyntax(builder));
             }
+        }
+
+        private static string GetAccessTokenTypeName(ApiAccessTokenType accessTokenType)
+        {
+            return AccessTokenTypesMap.TryGetValue(accessTokenType, out var typeName)
+                ? typeName
+                : throw new Exception("Access token type is invalid");
         }
     }
 }
