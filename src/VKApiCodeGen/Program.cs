@@ -14,11 +14,12 @@ namespace VKApiCodeGen
     // Сделать, чтобы из int? делался DateTime? для Юникстайма
     public class Program
     {
-        private const string ParentDirectory = "gen";
+        private const string ParentDirectory = "Generated";
         private const string ObjectsDirectory = "Objects";
         private const string ResponsesDirectory = "Responses";
         private const string MethodsDirectory = "Methods";
         private const string InterfacesDirectory = "Contracts";
+        private const string CrossMethodEnumsDirectory = "CrossMethodEnums";
 
         private static readonly SourcesManager sourcesManager = new SourcesManager();
 
@@ -45,6 +46,7 @@ namespace VKApiCodeGen
                 AddObjects(objects, ObjectsDirectory);
                 AddObjects(responses, ResponsesDirectory);
                 AddMethods(methods, InterfacesDirectory, MethodsDirectory);
+                AddCrossMethodEnums(CSharpMethod.CrossMethodEnumParameters, CrossMethodEnumsDirectory);
 
                 Console.WriteLine("Writing files");
 
@@ -81,6 +83,20 @@ namespace VKApiCodeGen
 
                 sourcesManager.AddToSourceGroup(interfacesDirectory, methodsInterface);
                 sourcesManager.AddToSourceGroup(methodsDirectory, methodsClass);
+            }
+        }
+
+        private static void AddCrossMethodEnums(IEnumerable<CSharpEnum> enums, string directory)
+        {
+            foreach (var e in enums)
+            {
+                var enumSourceFile = new CSharpSourceFile
+                {
+                    Name = e.Name,
+                    Enum = e
+                };
+
+                sourcesManager.AddToSourceGroup(Path.Combine(directory), enumSourceFile);
             }
         }
 

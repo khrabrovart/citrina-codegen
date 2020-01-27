@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using VKApiCodeGen.Extensions;
 using VKApiSchemaParser.Models;
@@ -13,7 +14,39 @@ namespace VKApiCodeGen.Generator.Entities
 
         public IDictionary<string, string> Keys { get; set; }
 
-        public static CSharpEnum FromObject(IApiEnumEntity obj, string name = null)
+        public override bool Equals(object obj)
+        {
+            if (obj == null || !(obj is CSharpEnum other))
+            {
+                return false;
+            }
+
+            var thisKeys = Keys.Select(k => k.Key).ToArray();
+            var otherKeys = other.Keys.Select(k => k.Key).ToArray();
+
+            if (thisKeys.Length != otherKeys.Length)
+            {
+                return false;
+            }
+
+            for (int i = 0; i < thisKeys.Length; i++)
+            {
+                if (thisKeys[i] != otherKeys[i])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override int GetHashCode()
+        {
+            var hash = Keys.Keys.Aggregate(0, (r, i) => r += i.GetHashCode());
+            return Math.Abs(hash);
+        }
+
+        public static CSharpEnum FromObject(IApiEnumEntity obj)
         {
             IDictionary<string, string> keys;
 
@@ -39,7 +72,7 @@ namespace VKApiCodeGen.Generator.Entities
 
             return new CSharpEnum
             {
-                Name = string.IsNullOrWhiteSpace(name) ? obj.Name.ToBeautifiedName() : name,
+                Name = obj.Name?.ToBeautifiedName(),
                 Summary = new CSharpSummary(obj.Description),
                 Keys = keys
             };
@@ -55,10 +88,8 @@ namespace VKApiCodeGen.Generator.Entities
             builder.Line($"public enum {Name}");
             builder.Block(() =>
             {
-                for (int i = 0; i < Keys.Count; i++)
+                foreach (var key in Keys)
                 {
-                    var key = Keys[i];
-
                     if (key.Value != null && !int.TryParse(key.Value, out var intValue))
                     {
                         new CSharpAttribute($"EnumMember(Value = \"{key.Value}\")").WriteSyntax(builder);

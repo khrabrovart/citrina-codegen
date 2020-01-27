@@ -15,6 +15,11 @@ namespace VKApiCodeGen.Generator.Entities
             "System.Collections.Generic", "System.Threading.Tasks", "Newtonsoft.Json"
         };
 
+        public CSharpSourceFile()
+        {
+            Namespace = NamespaceName;
+        }
+
         public string Name { get; set; }
 
         public string Namespace { get; set; }
@@ -37,8 +42,7 @@ namespace VKApiCodeGen.Generator.Entities
             var sourceFile = new CSharpSourceFile
             {
                 Name = obj.Name.ToBeautifiedName(),
-                Usings = DefaultUsings,
-                Namespace = NamespaceName
+                Usings = DefaultUsings
             };
 
             if (obj.IsEnum())

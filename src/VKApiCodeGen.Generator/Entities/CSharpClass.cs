@@ -68,19 +68,6 @@ namespace VKApiCodeGen.Generator.Entities
                     notEmpty = true;
                 }
 
-                var enumParameters = Methods.SelectMany(m => m.EnumParameters).ToArray();
-
-                if (enumParameters.Any())
-                {
-                    if (notEmpty)
-                    {
-                        builder.Line();
-                    }
-
-                    WriteIterableSyntax(builder, enumParameters);
-                    notEmpty = true;
-                }
-
                 if (Properties.Any())
                 {
                     if (notEmpty)
