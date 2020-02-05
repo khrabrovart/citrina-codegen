@@ -15,7 +15,7 @@ namespace VKApiCodeGen.Generator.Entities
             return new CSharpInterface
             {
                 Name = 'I' + methods[0].Category.ToBeautifiedName(),
-                Methods = methods.SelectMany(m => CSharpMethod.Map(m, true)).ToArray()
+                Methods = methods.SelectMany(m => CSharpMethod.FromMethod(m, true)).ToArray()
             };
         }
 

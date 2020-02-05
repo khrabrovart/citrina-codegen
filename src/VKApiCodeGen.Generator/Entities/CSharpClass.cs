@@ -42,7 +42,7 @@ namespace VKApiCodeGen.Generator.Entities
             {
                 Name = name,
                 Interface = 'I' + name,
-                Methods = methods.SelectMany(m => CSharpMethod.Map(m, false)).ToArray(),
+                Methods = methods.SelectMany(m => CSharpMethod.FromMethod(m, false)).ToArray(),
                 Properties = Array.Empty<CSharpProperty>(),
                 NestedEnums = Array.Empty<CSharpEnum>(),
             };

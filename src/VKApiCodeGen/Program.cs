@@ -19,7 +19,7 @@ namespace VKApiCodeGen
         private const string ResponsesDirectory = "Responses";
         private const string MethodsDirectory = "Methods";
         private const string InterfacesDirectory = "Contracts";
-        private const string CrossMethodEnumsDirectory = "CrossMethodEnums";
+        private const string CrossMethodEnumsDirectory = "MethodEnums";
 
         private static readonly SourcesManager sourcesManager = new SourcesManager();
 
@@ -46,7 +46,7 @@ namespace VKApiCodeGen
                 AddObjects(objects, ObjectsDirectory);
                 AddObjects(responses, ResponsesDirectory);
                 AddMethods(methods, InterfacesDirectory, MethodsDirectory);
-                AddCrossMethodEnums(CSharpMethod.CrossMethodEnumParameters, CrossMethodEnumsDirectory);
+                AddCrossMethodEnums(CSharpMethod.MethodEnumParameters.Values, CrossMethodEnumsDirectory);
 
                 Console.WriteLine("Writing files");
 

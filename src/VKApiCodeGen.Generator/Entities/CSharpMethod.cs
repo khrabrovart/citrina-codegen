@@ -8,7 +8,7 @@ namespace VKApiCodeGen.Generator.Entities
 {
     public class CSharpMethod : ISyntaxEntity
     {
-        public static readonly HashSet<CSharpEnum> CrossMethodEnumParameters = new HashSet<CSharpEnum>();
+        public static readonly IDictionary<string, CSharpEnum> MethodEnumParameters = new Dictionary<string, CSharpEnum>();
 
         private static readonly IDictionary<ApiAccessTokenType, string> AccessTokenTypesMap = new Dictionary<ApiAccessTokenType, string>
         {
@@ -30,7 +30,7 @@ namespace VKApiCodeGen.Generator.Entities
         // If null then this method behaves as interface
         public CSharpMethodBody Body { get; set; }
 
-        public static CSharpMethod[] Map(ApiMethod method, bool forInterface)
+        public static CSharpMethod[] FromMethod(ApiMethod method, bool forInterface)
         {
             var outputMethods = new List<CSharpMethod>();
 
@@ -63,17 +63,19 @@ namespace VKApiCodeGen.Generator.Entities
 
                         if (p.IsEnum())
                         {
-                            var newEnum = GetEnumParameter(p);
+                            var newEnum = CSharpEnum.FromObject(p);
+                            newEnum.Name = $"{method.Category.ToBeautifiedName()}_{methodName}_{parameterName}";
 
-                            CrossMethodEnumParameters.Add(newEnum);
+                            MethodEnumParameters.TryAdd(newEnum.Name, newEnum);
                             parameters.Add(parameterName, newEnum.Name);
                         }
                         // Check if enum is in array and it's not a reference (references have names)
                         else if (p.IsArray() && p.Items.IsEnum() && p.Items.Name == null)
                         {
-                            var newEnum = GetEnumParameter(p.Items);
+                            var newEnum = CSharpEnum.FromObject(p.Items);
+                            newEnum.Name = $"{method.Category.ToBeautifiedName()}_{methodName}_{parameterName}";
 
-                            CrossMethodEnumParameters.Add(newEnum);
+                            MethodEnumParameters.TryAdd(newEnum.Name, newEnum);
                             parameters.Add(parameterName, $"IEnumerable<{newEnum.Name}>");
                         }
                         else
@@ -136,16 +138,6 @@ namespace VKApiCodeGen.Generator.Entities
             return AccessTokenTypesMap.TryGetValue(accessTokenType, out var typeName)
                 ? typeName
                 : throw new Exception("Access token type is invalid");
-        }
-
-        private static CSharpEnum GetEnumParameter(IApiEnumEntity obj)
-        {
-            var newEnum = CSharpEnum.FromObject(obj);
-
-            newEnum.Name = $"Enum{newEnum.GetHashCode()}";
-            newEnum.Summary = null;
-
-            return newEnum;
         }
     }
 }
